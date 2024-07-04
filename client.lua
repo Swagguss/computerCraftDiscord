@@ -1,6 +1,6 @@
 -- client.lua
 local modem = peripheral.wrap("right")
-modem.open(1) -- Open channel 1 for communication
+modem.open(os.getComputerID()) -- Open a unique channel based on the computer's ID
 
 local chatHistory = {}
 
@@ -13,15 +13,20 @@ local function promptUsername()
         local username = read()
 
         -- Send join message to server
-        modem.transmit(1, 1, {type = "join", username = username})
+        modem.transmit(1, os.getComputerID(), {type = "join", username = username})
 
         -- Wait for server response
-        local event, side, channel, replyChannel, message, distance = os.pullEvent("modem_message")
-        if message.type == "error" then
-            print(message.text)
-            sleep(2)
-        else
-            return username
+        while true do
+            local event, side, channel, replyChannel, message, distance = os.pullEvent("modem_message")
+            if channel == os.getComputerID() then
+                if message.type == "error" then
+                    print(message.text)
+                    sleep(2)
+                    break
+                else
+                    return username
+                end
+            end
         end
     end
 end
@@ -41,7 +46,7 @@ end
 local function listenForMessages()
     while true do
         local event, side, channel, replyChannel, message, distance = os.pullEvent("modem_message")
-        if message.type == "chat" then
+        if channel == os.getComputerID() and message.type == "chat" then
             table.insert(chatHistory, message.text)
             displayChatHistory()
         end
@@ -53,6 +58,6 @@ parallel.waitForAny(listenForMessages, function()
     while true do
         write("> ")
         local text = read()
-        modem.transmit(1, 1, {type = "message", text = text})
+        modem.transmit(1, os.getComputerID(), {type = "message", text = text})
     end
 end)

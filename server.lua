@@ -1,6 +1,6 @@
 -- server.lua
 local modem = peripheral.wrap("right")
-modem.open(1) -- Open channel 1 for communication
+modem.open(1) -- Open channel 1 for incoming join requests
 
 local clients = {}
 local usernames = {}
@@ -13,7 +13,7 @@ while true do
     
     if message.type == "join" then
         if usernames[message.username] then
-            modem.transmit(1, replyChannel, {type = "error", text = "Username already taken."})
+            modem.transmit(replyChannel, 1, {type = "error", text = "Username already taken."})
         else
             clients[replyChannel] = message.username
             usernames[message.username] = true
@@ -21,14 +21,14 @@ while true do
             
             -- Send chat history to new client
             for _, chatMessage in ipairs(chatHistory) do
-                modem.transmit(1, replyChannel, {type = "chat", text = chatMessage})
+                modem.transmit(replyChannel, 1, {type = "chat", text = chatMessage})
             end
             
             -- Notify everyone about the new user
             local joinMessage = message.username .. " joined the chat."
             table.insert(chatHistory, joinMessage)
             for clientChannel, _ in pairs(clients) do
-                modem.transmit(1, clientChannel, {type = "chat", text = joinMessage})
+                modem.transmit(clientChannel, 1, {type = "chat", text = joinMessage})
             end
         end
     
@@ -39,7 +39,7 @@ while true do
             table.insert(chatHistory, chatMessage)
             print(chatMessage)
             for clientChannel, _ in pairs(clients) do
-                modem.transmit(1, clientChannel, {type = "chat", text = chatMessage})
+                modem.transmit(clientChannel, 1, {type = "chat", text = chatMessage})
             end
         end
     
@@ -52,7 +52,7 @@ while true do
             table.insert(chatHistory, leaveMessage)
             print(leaveMessage)
             for clientChannel, _ in pairs(clients) do
-                modem.transmit(1, clientChannel, {type = "chat", text = leaveMessage})
+                modem.transmit(clientChannel, 1, {type = "chat", text = leaveMessage})
             end
         end
     end
